@@ -10,7 +10,7 @@ A fast bufferline based on nvchad's tabufline
 ```lua
 use {
     "nvoid-lua/bufferline.lua",
-    requires = 'nvim-tree/nvim-web-devicons',
+    requires = 'echasnovski/mini.icons',
     config = function()
         require("bufferline").setup({ kind_icons = true })
     end,
@@ -22,7 +22,7 @@ use {
 ```lua
 {
     "nvoid-lua/bufferline.lua",
-    dependencies = 'nvim-tree/nvim-web-devicons',
+    dependencies = 'echasnovski/mini.icons',
     config = function()
         require("bufferline").setup({ kind_icons = true })
     end,
@@ -36,15 +36,9 @@ require("bufferline").setup {
   always_show = false,
   show_numbers = false,
   kind_icons = true,
-  icons = {
-    unknown_file = "󰈚",
-    close = "󰅖",
-    modified = "",
-    tab = "󰌒",
-    tab_close = "󰅙",
-    tab_toggle = "",
-    tab_add = "",
-  },
+  -- Icons are now primarily sourced from 'mini.icons' if available.
+  -- Fallback icons are used internally if 'mini.icons' is not found or specific icons are missing.
+  -- You no longer need to configure the 'icons' table here for default behavior.
 }
 ```
 

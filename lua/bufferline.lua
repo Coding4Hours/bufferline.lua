@@ -54,16 +54,6 @@ function M.setup(opts)
 	M.always_show = opts.always_show or false
 	M.show_numbers = opts.show_numbers or false
 	M.kind_icons = opts.kind_icons or false
-	M.icons = opts.icons
-		or {
-			unknown_file = "󰈚",
-			close = "󰅖",
-			modified = "",
-			tab = "󰌒",
-			tab_close = "󰅙",
-			tab_toggle = "",
-			tab_add = "",
-		}
 
 	M.define_autocmds(require("bufferline.autocmd"))
 	M.show()
