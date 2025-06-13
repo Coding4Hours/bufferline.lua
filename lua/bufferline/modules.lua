@@ -1,7 +1,7 @@
 local api = vim.api
 local fn = vim.fn
 local utils = require("bufferline.utils")
-local icons = require("bufferline").icons
+local mini_icons_present, mini_icons = pcall(require, "mini.icons")
 utils.btns()
 
 local M = {}
@@ -41,25 +41,31 @@ M.tablist = function()
 	local result, number_of_tabs = "", fn.tabpagenr("$")
 
 	if number_of_tabs > 1 then
+		local tab_close_icon = mini_icons_present and mini_icons.get_icon_by_name("close") or "󰅙"
+		local tab_add_icon = mini_icons_present and mini_icons.get_icon_by_name("plus") or ""
+		local tab_icon = mini_icons_present and mini_icons.get_icon_by_name("folder") or "󰌒"
+		local tab_toggle_icon = mini_icons_present and mini_icons.get_icon_by_name("chevron_left") or ""
+
 		for i = 1, number_of_tabs, 1 do
 			local tab_hl = ((i == fn.tabpagenr()) and "%#TbLineTabOn# ") or "%#TbLineTabOff# "
 			result = result .. ("%" .. i .. "@TbGotoTab@" .. tab_hl .. i .. " ")
 			result = (
 				i == fn.tabpagenr()
-				and result .. "%#TbLineTabCloseBtn#" .. "%@TbTabClose@" .. icons.tab_close .. " %X"
+				and result .. "%#TbLineTabCloseBtn#" .. "%@TbTabClose@" .. tab_close_icon .. " %X"
 			) or result
 		end
 
-		local new_tabtn = "%#TblineTabNewBtn#" .. "%@TbNewTab@ " .. icons.tab_add .. "%X"
-		local tabstoggleBtn = "%@TbToggleTabs@ %#TBTabTitle# " .. icons.tab .. " %X"
+		local new_tabtn = "%#TblineTabNewBtn#" .. "%@TbNewTab@ " .. tab_add_icon .. "%X"
+		local tabstoggleBtn = "%@TbToggleTabs@ %#TBTabTitle# " .. tab_icon .. " %X"
 
-		return vim.g.TbTabsToggled == 1 and tabstoggleBtn:gsub("()", { [36] = icons.tab_toggle .. " " })
+		return vim.g.TbTabsToggled == 1 and tabstoggleBtn:gsub("()", { [36] = tab_toggle_icon .. " " })
 			or new_tabtn .. tabstoggleBtn .. result
 	end
 end
 
 M.buttons = function()
-	local CloseAllBufsBtn = "%@TbCloseAllBufs@%#TbLineCloseAllBufsBtn# " .. icons.close .. " %X"
+	local close_all_icon = mini_icons_present and mini_icons.get_icon_by_name("close") or "󰅖"
+	local CloseAllBufsBtn = "%@TbCloseAllBufs@%#TbLineCloseAllBufsBtn# " .. close_all_icon .. " %X"
 	return CloseAllBufsBtn
 end
 

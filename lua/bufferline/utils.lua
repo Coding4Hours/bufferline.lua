@@ -1,10 +1,9 @@
 local M = {}
 local api = vim.api
 local fn = vim.fn
-local icons = require("bufferline").icons
 local show_numbers = require("bufferline").show_numbers
 local kind_icons = require("bufferline").kind_icons
-local devicons_present, devicons = pcall(require, "nvim-web-devicons")
+local mini_icons_present, mini_icons = pcall(require, "mini.icons")
 
 function M.isBufValid(bufnr)
 	return vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buflisted
@@ -48,53 +47,62 @@ function M.new_hl(group1, group2)
 end
 
 function M.add_fileInfo(name, bufnr)
-	if devicons_present then
-		local icon, icon_hl = devicons.get_icon(name, string.match(name, "%a+$"))
-		if not icon then
-			icon = icons.unknown_file
-			icon_hl = "DevIconDefault"
-		end
-		icon = (
-			api.nvim_get_current_buf() == bufnr and M.new_hl(icon_hl, "TbLineBufOn") .. " " .. icon
-			or M.new_hl(icon_hl, "TbLineBufOff") .. " " .. icon
-		)
-		for _, value in ipairs(vim.t.bufs) do
-			if M.isBufValid(value) then
-				if name == fn.fnamemodify(api.nvim_buf_get_name(value), ":t") and value ~= bufnr then
-					local other = {}
-					for match in (vim.fs.normalize(api.nvim_buf_get_name(value)) .. "/"):gmatch("(.-)" .. "/") do
-						table.insert(other, match)
-					end
-					local current = {}
-					for match in (vim.fs.normalize(api.nvim_buf_get_name(bufnr)) .. "/"):gmatch("(.-)" .. "/") do
-						table.insert(current, match)
-					end
-					name = current[#current]
-					for i = #current - 1, 1, -1 do
-						local value_current = current[i]
-						local other_current = other[i]
-						if value_current ~= other_current then
-							if (#current - i) < 2 then
-								name = value_current .. "/" .. name
-							else
-								name = value_current .. "/../" .. name
-							end
-							break
-						end
-					end
-					break
+	local icon = ""
+	local icon_hl = "DevIconDefault" -- Default highlight, can be adjusted
+
+	if mini_icons_present then
+		local filetype = vim.bo[bufnr].filetype
+		icon = mini_icons.get_icon_for_filetype(filetype, name) -- Pass name as fallback
+	else
+		-- Fallback if mini.icons is not available (optional)
+		icon = "󰈚" -- Use a default unknown file icon if mini.icons is not present
+	end
+
+	-- Apply highlight to the icon
+	icon = (
+		api.nvim_get_current_buf() == bufnr and M.new_hl(icon_hl, "TbLineBufOn") .. " " .. icon
+		or M.new_hl(icon_hl, "TbLineBufOff") .. " " .. icon
+	)
+
+	-- Logic for handling duplicate names (remains the same)
+	for _, value in ipairs(vim.t.bufs) do
+		if M.isBufValid(value) then
+			if name == fn.fnamemodify(api.nvim_buf_get_name(value), ":t") and value ~= bufnr then
+				local other = {}
+				for match in (vim.fs.normalize(api.nvim_buf_get_name(value)) .. "/"):gmatch("(.-)" .. "/") do
+					table.insert(other, match)
 				end
+				local current = {}
+				for match in (vim.fs.normalize(api.nvim_buf_get_name(bufnr)) .. "/"):gmatch("(.-)" .. "/") do
+					table.insert(current, match)
+				end
+				name = current[#current]
+				for i = #current - 1, 1, -1 do
+					local value_current = current[i]
+					local other_current = other[i]
+					if value_current ~= other_current then
+						if (#current - i) < 2 then
+							name = value_current .. "/" .. name
+						else
+							name = value_current .. "/../" .. name
+						end
+						break
+					end
+				end
+				break
 			end
 		end
-		local padding = (24 - #name - 5) / 2
-		local maxname_len = 16
-		name = (#name > maxname_len and string.sub(name, 1, 14) .. "..") or name
-		name = (api.nvim_get_current_buf() == bufnr and "%#TbLineBufOn# " .. name) or ("%#TbLineBufOff# " .. name)
-		if kind_icons then
-			return string.rep(" ", padding) .. icon .. name .. string.rep(" ", padding)
-		else
-			return string.rep(" ", padding) .. name .. string.rep(" ", padding)
-		end
+	end
+
+	local padding = (24 - #name - 5) / 2
+	local maxname_len = 16
+	name = (#name > maxname_len and string.sub(name, 1, 14) .. "..") or name
+	name = (api.nvim_get_current_buf() == bufnr and "%#TbLineBufOn# " .. name) or ("%#TbLineBufOff# " .. name)
+
+	if kind_icons then
+		return string.rep(" ", padding) .. icon .. name .. string.rep(" ", padding)
+	else
+		return string.rep(" ", padding) .. name .. string.rep(" ", padding)
 	end
 end
 
@@ -108,7 +116,10 @@ function M.getBtnsWidth()
 end
 
 function M.styleBufferTab(nr)
-	local close_btn = "%" .. nr .. "@TbKillBuf@ " .. icons.close .. " %X"
+	local close_icon = mini_icons_present and mini_icons.get_icon_by_name("close") or "󰅖"
+	local modified_icon = mini_icons_present and mini_icons.get_icon_by_name("circle_filled") or ""
+
+	local close_btn = "%" .. nr .. "@TbKillBuf@ " .. close_icon .. " %X"
 	local name = (#api.nvim_buf_get_name(nr) ~= 0) and fn.fnamemodify(api.nvim_buf_get_name(nr), ":t") or " No Name "
 	name = "%" .. nr .. "@TbGoToBuf@" .. M.add_fileInfo(name, nr) .. "%X"
 	if show_numbers then
@@ -120,11 +131,11 @@ function M.styleBufferTab(nr)
 		end
 	end
 	if nr == api.nvim_get_current_buf() then
-		close_btn = (vim.bo[0].modified and "%" .. nr .. "@TbKillBuf@%#TbLineBufOnModified# " .. icons.modified .. " ")
+		close_btn = (vim.bo[0].modified and "%" .. nr .. "@TbKillBuf@%#TbLineBufOnModified# " .. modified_icon .. " ")
 			or ("%#TbLineBufOnClose#" .. close_btn)
 		name = "%#TbLineBufOn#" .. name .. close_btn
 	else
-		close_btn = (vim.bo[nr].modified and "%" .. nr .. "@TbKillBuf@%#TbBufLineBufOffModified#  ")
+		close_btn = (vim.bo[nr].modified and "%" .. nr .. "@TbKillBuf@%#TbBufLineBufOffModified# " .. modified_icon .. " ")
 			or ("%#TbLineBufOffClose#" .. close_btn)
 		name = "%#TbLineBufOff#" .. name .. close_btn
 	end
